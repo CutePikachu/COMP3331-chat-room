@@ -35,7 +35,9 @@ def p2p_connection(sock, client_address):
         print('connection closed from ', peer_name)
 
 
-def listen_for_connection(sock):
+def listen_for_connection():
+    sock = socket(AF_INET, SOCK_STREAM)
+    sock.bind('localhost', 30000)
     sock.listen(1)
     while True:
         print("Waiting for connection...")
@@ -52,13 +54,14 @@ def log_out(server):
 
 # process the message receiver from server
 def process_message_received(server, msg):
+    global p2p_users
     if msg == string_to_bytes("You have been logged out"):
         print("You have been logged out")
         log_out(server)
     elif msg.split(' ', 1)[0].rstrip(' ') == string_to_bytes("stopprivate"):
         peer = msg.split(' ', 1)[1]
         con = None
-        global p2p_users
+        
         for p in p2p_users[peer]:
             if p['peer_name'] == peer:
                 con = p['sock']
@@ -74,7 +77,7 @@ def process_message_received(server, msg):
         peer_address = (peer_ip, peer_port)
         # client connect to peer and add peer to list
         sock.connect(peer_address)
-        global p2p_users
+
         p2p_users.append({'peer_name': peer_name, 'sock': sock})
         # listen from peer
         p2p_messaging(sock, peer_name)
@@ -141,7 +144,7 @@ def login(sock):
             if bytes_to_string(valid) == 'True':
                 print('Login successfully...')
                 # client listening on its port when it is login successfully
-                start_new_thread(listen_for_connection, (sock))
+                start_new_thread(listen_for_connection, (sock, ))
                 # client sending message to server
                 online_user(sock)
                 exit(1)
