@@ -15,7 +15,7 @@ class Server:
         self._block_duration = -1
         self._timeout = -1
 
-    def process_login(self, connection):
+    def process_login(self, connection, client_add):
         while True:
             sleep(0.1)
             data = 'Username: '
@@ -48,7 +48,7 @@ class Server:
 
                 # validate the username and password
                 if username == user.get_username() and user.validate_login(pwd):
-                    user.login(connection)
+                    user.login(connection, client_add)
                     user.timer_update()
                     valid = 'True'
                     break
@@ -108,6 +108,11 @@ class Server:
                     print('unblock')
                     unblock_user = msgs[1]
                     self.unblock(username, unblock_user, connection)
+                elif re.match('startprivate', msgs[0]):
+                    print('start private')
+                    peer_name = msgs[1].rstrip('\n')
+                    peer = find_user(peer_name, self.users)
+                    connection.sendall(string_to_bytes('private_connection ' + peer.get_address()[0] + ' ' + peer.get_address()[1]) + ' ' + peer_name)
                 else:
                     connection.sendall(string_to_bytes('In valid command ' + msgs[0]))
                     print('Invalid command is ' + msgs[0])
@@ -115,8 +120,9 @@ class Server:
                 continue
 
     # remove inactive user from the list
-    def remove(self, connection):
-        connection = list(filter(lambda i: i['connection'] != connection, self._active_users))
+    def remove(self, con):
+        connection = list(filter(lambda i: i['connection'] != con, self._active_users))
+        self._active_users = connection
 
     # logout user
     def logout(self, username):
@@ -132,17 +138,17 @@ class Server:
     def add_user(self, connection, client_address):
         try:
             # process login
-            status, username = self.process_login(connection)
+            status, username = self.process_login(connection, client_address)
 
             print("connection from ", client_address)
-
+            print(type(client_address))
             # if the user doesnt login with a success
             if not status:
                 connection.close()
             else:
                 # keep track of user if login successfully
                 # add user to the active user list
-                self._active_users.append({'username': username, 'sock':connection})
+                self._active_users.append({'username': username, 'sock': connection})
                 # resent offline messages
                 curr_user = find_user(username, self.users)
                 offline_message = curr_user.get_offline_messages()
@@ -195,6 +201,7 @@ class Server:
         return user_list
 
         # list all online users logged in the past time minutes
+
     def who_else_since(self, username, time):
         user_list = ""
         for user in self.users:
@@ -231,7 +238,6 @@ class Server:
             connection.sendall(string_to_bytes(unblock_name + " has been blocked"))
         else:
             connection.sendall(string_to_bytes("Failed. You cannot unblock " + unblock_name))
-
 
     # read the credential file and create username pwd pair
     def read_credentials(self):

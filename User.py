@@ -1,5 +1,5 @@
 import time
-from help_functions import *
+
 
 class User:
     def __init__(self, username, password):
@@ -13,6 +13,7 @@ class User:
         self._num_tries = 0
         self._black_list = []
         self._offline_messages = []
+        self._address = ()
 
     # getters
     def get_username(self):
@@ -26,6 +27,9 @@ class User:
 
     def get_offline_messages(self):
         return self._offline_messages
+
+    def get_address(self):
+        return self._address
 
     # check username and pwd are match
     def validate_login(self, password):
@@ -62,11 +66,12 @@ class User:
         return False
 
     # login the user
-    def login(self, connection):
+    def login(self, connection, address):
         self._num_tries = 0
         self._sock = connection
         self._timer = self._start_time = time.time()
         self._login = True
+        self._address = address
 
     # check whether the user is active
     def is_active(self):
@@ -97,4 +102,3 @@ class User:
     # store the offline messages when the user logoff
     def store_offline_message(self, msg):
         self._offline_messages.append(msg)
-
