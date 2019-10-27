@@ -1,5 +1,5 @@
 import time
-
+from help_functions import *
 
 class User:
     def __init__(self, username, password):
@@ -23,6 +23,9 @@ class User:
 
     def get_connection(self):
         return self._sock
+
+    def get_offline_messages(self):
+        return self._offline_messages
 
     # check username and pwd are match
     def validate_login(self, password):
@@ -71,7 +74,7 @@ class User:
 
     # add the user to black list
     def block_user(self, user):
-        if user not in self._black_list:
+        if user not in self._black_list and user != self._username:
             self._black_list.append(user)
             return True
         return False
@@ -90,3 +93,8 @@ class User:
     # whether the user is logged in in the past time secs
     def is_logged_in_after(self, secs):
         return self._start_time + secs >= time.time()
+
+    # store the offline messages when the user logoff
+    def store_offline_message(self, msg):
+        self._offline_messages.append(msg)
+

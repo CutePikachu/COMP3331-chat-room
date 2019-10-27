@@ -70,21 +70,21 @@ class Server:
 
     # process the command entered form user
     def process_command(self, connection, username):
+
         while True:
             try:
                 command = bytes_to_string(connection.recv(1024)).rstrip('\n')
-
                 curr_user = find_user(username, self.users)
+
                 curr_user.timer_update()
                 msgs = command.split(' ', 1)
 
                 if re.match('logout', msgs[0].rstrip(' ')):
                     self.logout(username)
                 elif re.match('message', msgs[0].rstrip(' ')):
-                    user = msgs[1].split(' ', 1)[0]
-                    print('user is ' + user)
+                    receiver = msgs[1].split(' ', 1)[0]
                     message = msgs[1].split(' ', 1)[1]
-                    print('message is ' + message)
+                    self.messaging(username, receiver, message)
                 elif re.match('broadcast', msgs[0].rstrip(' ')):
                     message = username + ": " + msgs[1]
                     self.broadcast(string_to_bytes(message), connection, curr_user)
@@ -143,6 +143,13 @@ class Server:
                 # keep track of user if login successfully
                 # add user to the active user list
                 self._active_users.append({'username': username, 'sock':connection})
+                # resent offline messages
+                curr_user = find_user(username, self.users)
+                offline_message = curr_user.get_offline_messages()
+                if offline_message:
+                    for msg in offline_message:
+                        connection.sendall(string_to_bytes(msg + '\n'))
+
                 self.process_command(connection, username)
 
         finally:
@@ -172,8 +179,12 @@ class Server:
 
     # send message to other user
     def messaging(self, sender, receiver, message):
-        receiver_connection = find_user(receiver, self.users)
-
+        receiver_con = find_user(receiver, self.users)
+        message = "from " + sender + " : " + message
+        if not receiver_con.is_active():
+            receiver_con.store_offline_message(message)
+        else:
+            receiver_con.get_connection().sendall(string_to_bytes(message))
 
     # list all online users
     def who_else(self, username):
@@ -208,14 +219,19 @@ class Server:
     # allow a user to block another user
     def block(self, username, block_name, connection):
         user = find_user(username, self.users)
-        connection.sendall(string_to_bytes(block_name + " has been blocked"))
-        user.block_user(block_name)
+        if user.block_user(block_name):
+            connection.sendall(string_to_bytes(block_name + " has been blocked"))
+        else:
+            connection.sendall(string_to_bytes("Failed. You cannot block " + block_name))
 
     # allow a user to unblock another user
     def unblock(self, username, unblock_name, connection):
         user = find_user(username, self.users)
-        connection.sendall(string_to_bytes(unblock_name + " has been blocked"))
-        user.unblock_user(unblock_name)
+        if user.unblock_user(unblock_name):
+            connection.sendall(string_to_bytes(unblock_name + " has been blocked"))
+        else:
+            connection.sendall(string_to_bytes("Failed. You cannot unblock " + unblock_name))
+
 
     # read the credential file and create username pwd pair
     def read_credentials(self):
