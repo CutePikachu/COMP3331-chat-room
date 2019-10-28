@@ -13,7 +13,8 @@ class User:
         self._num_tries = 0
         self._black_list = []
         self._offline_messages = []
-        self._address = ()
+        self._address = ''
+        self._port_num = -1
 
     # getters
     def get_username(self):
@@ -30,6 +31,12 @@ class User:
 
     def get_address(self):
         return self._address
+
+    def get_port_num(self):
+        return self._port_num
+
+    def set_port_num(self, port):
+        self._port_num = port
 
     # check username and pwd are match
     def validate_login(self, password):

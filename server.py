@@ -112,7 +112,13 @@ class Server:
                     print('start private')
                     peer_name = msgs[1].rstrip('\n')
                     peer = find_user(peer_name, self.users)
-                    connection.sendall(string_to_bytes('private_connection ' + peer.get_address()[0] + ' 30000 ' + peer_name))
+                    # send address to client request for connection
+                    connection.sendall(string_to_bytes('private_connection ' + peer.get_address()[0] + ' ' + peer.get_port_num() + ' ' + peer_name + ' ' + username))
+                    
+                elif re.match('port', msgs[0]):
+                    print('get port for listening')
+                    port_num = msgs[1].rstrip('\n')
+                    curr_user.set_port_num(port_num)
                 else:
                     connection.sendall(string_to_bytes('In valid command ' + msgs[0]))
                     print('Invalid command is ' + msgs[0])
@@ -266,6 +272,7 @@ class Server:
 
 
 if __name__ == '__main__':
-    sever = Server()
-    sever.timeout_user()
-    sever.main()
+    server = Server()
+    server.timeout_user()
+    server.main()
+    
