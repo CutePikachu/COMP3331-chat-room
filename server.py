@@ -112,7 +112,7 @@ class Server:
                     print('start private')
                     peer_name = msgs[1].rstrip('\n')
                     peer = find_user(peer_name, self.users)
-                    connection.sendall(string_to_bytes('private_connection ' + peer.get_address()[0] + ' 30000 ' + peer_name)
+                    connection.sendall(string_to_bytes('private_connection ' + peer.get_address()[0] + ' 30000 ' + peer_name))
                 else:
                     connection.sendall(string_to_bytes('In valid command ' + msgs[0]))
                     print('Invalid command is ' + msgs[0])
