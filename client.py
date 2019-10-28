@@ -35,9 +35,23 @@ def p2p_connection(sock, client_address):
         print('connection closed from ', peer_name)
 
 
+def find_availble_port(sock):
+    port_num = 3000
+    while True:
+        try:
+            sock.bind(("127.0.0.1", port_num))
+        except socket.error as e:
+            if e.errno == errno.EADDRINUSE:
+                port_num += 1
+            else:
+                # something else raised the socket.error exception
+                print(e)
+                exit(1)
+
+
+
 def listen_for_connection():
-    sock = socket(AF_INET, SOCK_STREAM)
-    sock.bind('localhost', 30000)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.listen(1)
     while True:
         print("Waiting for connection...")
@@ -58,7 +72,7 @@ def process_message_received(server, msg):
     if msg == string_to_bytes("You have been logged out"):
         print("You have been logged out")
         log_out(server)
-    elif msg.split(' ', 1)[0].rstrip(' ') == string_to_bytes("stopprivate"):
+    elif bytes_to_string(msg).split(' ', 1)[0].rstrip(' ') == "stopprivate":
         peer = msg.split(' ', 1)[1]
         con = None
         
@@ -68,7 +82,7 @@ def process_message_received(server, msg):
                 connection = list(filter(lambda i: i['sock'] != con, p2p_users))
                 p2p_users = connection
                 con.close()
-    elif msg.split(' ', 1)[0].rstrip(' ') == string_to_bytes("private_connection"):
+    elif bytes_to_string(msg).split(' ', 1)[0].rstrip(' ') == "private_connection":
         peer_ip = msg.split(' ', 2)[1].rstrip(' ')
         peer_port = msg.split(' ', 3)[2].rstrip(' ')
         peer_name = msg.split(' ', 3)[3].rstrip('\n')
@@ -144,7 +158,7 @@ def login(sock):
             if bytes_to_string(valid) == 'True':
                 print('Login successfully...')
                 # client listening on its port when it is login successfully
-                start_new_thread(listen_for_connection, (sock, ))
+                start_new_thread(listen_for_connection, ())
                 # client sending message to server
                 online_user(sock)
                 exit(1)
