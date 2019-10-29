@@ -127,7 +127,7 @@ class Server:
 
     # remove inactive user from the list
     def remove(self, con):
-        connection = list(filter(lambda i: i['connection'] != con, self._active_users))
+        connection = list(filter(lambda i: i['sock'] != con, self._active_users))
         self._active_users = connection
 
     # logout user

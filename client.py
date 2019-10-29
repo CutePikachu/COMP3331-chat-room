@@ -84,21 +84,24 @@ def login():
 # while the user is online, it can send command to the server
 def online_user(connection):
     while True:
-        sockets_list = [sys.stdin, connection]
-        read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
-        for socks in read_sockets:
-            if socks == connection:
-                message = socks.recv(2048)
-                process_message_received(connection, message)
-                print(bytes_to_string(message))
-            else:
-                message = sys.stdin.readline()
-                result = process_message_typed(connection, message)
-                if result == 'logout':
-                    log_out()
-                elif result != 'private':
-                    global server
-                    server.send(string_to_bytes(message))
+        try:
+            sockets_list = [sys.stdin, connection]
+            read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
+            for socks in read_sockets:
+                if socks == connection:
+                    message = socks.recv(2048)
+                    process_message_received(connection, message)
+                    print(bytes_to_string(message))
+                else:
+                    message = sys.stdin.readline()
+                    result = process_message_typed(connection, message)
+                    if result == 'logout':
+                        log_out()
+                    elif result != 'private':
+                        global server
+                        server.send(string_to_bytes(message))
+        except KeyboardInterrupt:
+            log_out()
 
 
 # process the message receiver from server
@@ -122,8 +125,7 @@ def process_message_received(con, msg):
         # client connect to peer and add peer to list
         sock.connect(peer_address)
 
-        print(type())
-        # peers.append({'peer_name': peer_name, 'sock': sock})
+        peers.append({'peer_name': peer_name, 'sock': sock})
         # send name to peer
         sock.sendall(string_to_bytes(username))
         print("connected to " + peer_ip + " peer name is " + peer_name + " username is " + username)
@@ -140,12 +142,12 @@ def process_message_typed(server, msg):
     # if the message is private messaging
     elif msg.split(' ', 1)[0].rstrip(' ') == "private":
 
-        peer = msg.split(' ', 2)[1].rstrip(' ')
-        message = msg.split(' ', 2)[2]
+        peer_name = msg.split(' ', 2)[1].rstrip(' ')
+        message = peer_name + "(private): " + msg.split(' ', 2)[2]
         # send message to peer
-
+        print("private 2")
         for peer in peers:
-            if peer['peer_name'] == peer:
+            if peer['peer_name'] == peer_name:
                 peer['sock'].sendall(string_to_bytes(message))
         return 'private'
     elif msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
