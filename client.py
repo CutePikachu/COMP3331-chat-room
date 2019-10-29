@@ -103,7 +103,7 @@ def online_user(connection):
 
 # process the message receiver from server
 def process_message_received(con, msg):
-    global username
+    global peers
     msg = bytes_to_string(msg)
     if msg == "You have been logged out":
         print(msg)
@@ -122,13 +122,12 @@ def process_message_received(con, msg):
         # client connect to peer and add peer to list
         sock.connect(peer_address)
 
-        print(type())
-        # peers.append({'peer_name': peer_name, 'sock': sock})
+        peers.append({'peer_name': peer_name, 'sock': sock})
         # send name to peer
         sock.sendall(string_to_bytes(username))
         print("connected to " + peer_ip + " peer name is " + peer_name + " username is " + username)
         # listen from peer
-        p2p_messaging(con, sock, peer_name)
+        p2p_messaging(sock, peer_name)
     elif msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
         stop_private(msg.split(' ', 1)[1].rstrip(' '))
 
@@ -143,7 +142,7 @@ def process_message_typed(server, msg):
         peer = msg.split(' ', 2)[1].rstrip(' ')
         message = msg.split(' ', 2)[2]
         # send message to peer
-
+        print("private message")
         for peer in peers:
             if peer['peer_name'] == peer:
                 peer['sock'].sendall(string_to_bytes(message))
