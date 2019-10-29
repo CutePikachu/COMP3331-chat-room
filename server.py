@@ -147,7 +147,6 @@ class Server:
             status, username = self.process_login(connection, client_address)
 
             print("connection from ", client_address)
-            print(type(client_address))
             # if the user doesnt login with a success
             if not status:
                 connection.close()
