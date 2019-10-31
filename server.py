@@ -115,21 +115,17 @@ class Server:
                     block = False
                     for user in self._active_users:
                         if user['username'] == peer_name and peer_name != username:
-                            print(f"username is {username} peer_name is {peer_name}")
                             find = True
                             # if the user is being blocked
                             # he shouldnt be connected
                             user_instance = find_user(username, self.users)
                             if user_instance.is_blocked(username):
-                                print(f"{username} is blocked by {user.get_username()}")
                                 connection.sendall(string_to_bytes(f"connection failed, {peer_name} has blocked you:)."))
                                 block = True
                             else:
-                                print("sending data")
                                 peer = find_user(peer_name, self.users)
                                 # send address to client request for connection
                                 connection.sendall(string_to_bytes(f"private_connection {peer.get_address()[0]} {peer.get_port_num()} {peer_name} {username}"))
-                                print("connection should be set up")
                     if not find or not peer_name or not peer_name.strip():
                         connection.sendall(string_to_bytes("Error: peer " + peer_name + " is not valid"))
                 elif re.match('port', msgs[0]):
