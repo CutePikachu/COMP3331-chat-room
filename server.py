@@ -2,7 +2,7 @@ import sys
 import re
 import socket
 from time import sleep
-from threading import Timer
+from threading import Timer, Lock
 from User import User
 from help_functions import *
 from _thread import *
@@ -14,6 +14,7 @@ class Server:
         self._active_users = []
         self._block_duration = -1
         self._timeout = -1
+        self._lock = Lock()
 
     def process_login(self, connection, client_add):
         while True:
@@ -84,7 +85,7 @@ class Server:
                 elif re.match('message', msgs[0].rstrip(' ')):
                     receiver = msgs[1].split(' ', 1)[0]
                     message = msgs[1].split(' ', 1)[1]
-                    self.messaging(username, receiver, message)
+                    self.messaging(username, receiver, message, connection)
                 elif re.match('broadcast', msgs[0].rstrip(' ')):
                     message = username + "(broadcast): " + msgs[1]
                     self.broadcast(string_to_bytes(message), connection, curr_user)
@@ -109,12 +110,28 @@ class Server:
                     unblock_user = msgs[1]
                     self.unblock(username, unblock_user, connection)
                 elif re.match('startprivate', msgs[0]):
-                    print('start private')
                     peer_name = msgs[1].rstrip('\n')
-                    peer = find_user(peer_name, self.users)
-                    # send address to client request for connection
-                    connection.sendall(string_to_bytes('private_connection ' + peer.get_address()[0] + ' ' + peer.get_port_num() + ' ' + peer_name + ' ' + username))
-                    
+                    find = False
+                    block = False
+                    for user in self._active_users:
+                        if user['username'] == peer_name and peer_name != username:
+                            print(f"username is {username} peer_name is {peer_name}")
+                            find = True
+                            # if the user is being blocked
+                            # he shouldnt be connected
+                            user_instance = find_user(username, self.users)
+                            if user_instance.is_blocked(username):
+                                print(f"{username} is blocked by {user.get_username()}")
+                                connection.sendall(string_to_bytes(f"connection failed, {peer_name} has blocked you:)."))
+                                block = True
+                            else:
+                                print("sending data")
+                                peer = find_user(peer_name, self.users)
+                                # send address to client request for connection
+                                connection.sendall(string_to_bytes(f"private_connection {peer.get_address()[0]} {peer.get_port_num()} {peer_name} {username}"))
+                                print("connection should be set up")
+                    if not find or not peer_name or not peer_name.strip():
+                        connection.sendall(string_to_bytes("Error: peer " + peer_name + " is not valid"))
                 elif re.match('port', msgs[0]):
                     print('get port for listening')
                     port_num = msgs[1].rstrip('\n')
@@ -196,10 +213,12 @@ class Server:
                 self.logout(user.get_username())
 
     # send message to other user
-    def messaging(self, sender, receiver, message):
+    def messaging(self, sender, receiver, message, connection):
         receiver_con = find_user(receiver, self.users)
         message = "from " + sender + " : " + message
-        if not receiver_con.is_active():
+        if not receiver_con:
+            connection.sendall(string_to_bytes(f"Error: {receiver} is not available."))
+        elif not receiver_con.is_active():
             receiver_con.store_offline_message(message)
         else:
             receiver_con.get_connection().sendall(string_to_bytes(message))
@@ -223,6 +242,9 @@ class Server:
 
     # broadcast msg to users
     def broadcast(self, message, connection, sender):
+        # if the sender has blocked someone
+        if sender.has_black_list():
+            connection.sendall(string_to_bytes("Warning. You have blocked some user who won't receive this message."))
         for user in self._active_users:
             # if the user is not themselves or blocks the sender
             # check the sender is not in the black list of receiver

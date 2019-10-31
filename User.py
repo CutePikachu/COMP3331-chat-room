@@ -100,7 +100,9 @@ class User:
 
     # check whether the given user is blocked by the current user
     def is_blocked(self, user):
-        return user in self._black_list
+        if user in self._black_list:
+            return True
+        return False
 
     # whether the user is logged in in the past time secs
     def is_logged_in_after(self, secs):
@@ -109,3 +111,9 @@ class User:
     # store the offline messages when the user logoff
     def store_offline_message(self, msg):
         self._offline_messages.append(msg)
+
+    # if the user has blocked some peers
+    def has_black_list(self):
+        if not self._black_list:
+            return False
+        return True

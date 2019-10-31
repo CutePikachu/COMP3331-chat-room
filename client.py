@@ -93,6 +93,9 @@ def online_user(connection):
             for socks in read_sockets:
                 if socks == connection:
                     message = socks.recv(2048)
+                    if not message :
+                        print('\nDisconnected from server')
+                        return
                     if process_message_received(connection, message): 
                         print(bytes_to_string(message))
                 else:
@@ -113,7 +116,6 @@ def process_message_received(con, msg):
     global peers
     msg = bytes_to_string(msg)
     if msg == "You have been logged out":
-        print(msg)
         log_out()
     elif msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
         print("\"" + msg.split(' ', 1)[0].rstrip(' ') + "\"" + " receive")
@@ -141,6 +143,7 @@ def process_message_received(con, msg):
 
 # process different command typed by user
 def process_message_typed(server, msg):
+    print()
     global peers, username
     if msg == "logout":
         return "logout"
@@ -149,22 +152,42 @@ def process_message_typed(server, msg):
 
         peer_name = msg.split(' ', 2)[1].rstrip(' ')
         message = username + "(private): " + msg.split(' ', 2)[2]
+        # if there is no peer connected
+        if not peers:
+            print(f"You haven't established an connection with {peer_name}.")
+            return "private"
+        find = False
         # send message to peer
         for peer in peers:
             if peer['peer_name'] == peer_name:
+                find = True
                 peer['sock'].sendall(string_to_bytes(message))
+        if not find:
+            print(f"You haven't established an connection with {peer_name}.")
         return 'private'
     elif msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
+        # if there is no peer connected
+        if not peers:
+            print(f"You haven't established an connection with {peer_name}.")
+            return "private"
+        find = False
         peer = msg.split(' ', 1)[1].rstrip(' ')
-        
+        # find the peer to close connection
         for p in peers:
             if p['peer_name'] == peer.rstrip("\n"):
                 print("stop connection from " + peer)
+                find = True
                 con = p['sock']
                 con.sendall(string_to_bytes("stopprivate " + username))
                 con.close()
                 peers = peers.remove(p)
+        # error message for not find peer
+        if not find:
+            print(f"You haven't established an connection with {peer_name}.")
         return 'private'
+    elif msg.strip() == "startprivate":
+        print("peer name should not be empty.")
+        return "private"
     return 'not private'
 
 
@@ -248,6 +271,7 @@ def p2p_messaging(connection, peer_name):
             else:
                 message = sys.stdin.readline()
                 result = process_message_typed(server, message)
+                print(result)
                 if result == 'logout':
                     log_out()
                 elif result == 'not private':
