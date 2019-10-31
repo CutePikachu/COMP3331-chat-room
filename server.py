@@ -176,9 +176,12 @@ class Server:
 
         # connect with client
         while True:
-            print("Waiting for connection...")
-            connection, client_address = sock.accept()
-            start_new_thread(self.add_user, (connection, client_address))
+            try:
+                print("Waiting for connection...")
+                connection, client_address = sock.accept()
+                start_new_thread(self.add_user, (connection, client_address))
+            except KeyboardInterrupt:
+                exit(1)
 
     def timeout_user(self):
         Timer(1.0, self.timeout_user).start()

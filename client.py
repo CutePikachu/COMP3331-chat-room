@@ -117,22 +117,20 @@ def process_message_received(con, msg):
         peer_ip = msg.split(' ', 4)[1].rstrip(' ')
         peer_port = msg.split(' ', 4)[2].rstrip(' ')
         peer_name = msg.split(' ', 4)[3].rstrip(' ')
-        username = msg.split(' ', 4)[4].rstrip(' ')
+        name = msg.split(' ', 4)[4].rstrip(' ')
 
         # connect to the new peer using a new socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         peer_address = (peer_ip, int(peer_port))
         # client connect to peer and add peer to list
         sock.connect(peer_address)
-
+        print("\"" + peer_name + "\"")
         peers.append({'peer_name': peer_name, 'sock': sock})
         # send name to peer
         sock.sendall(string_to_bytes(username))
-        print("connected to " + peer_ip + " peer name is " + peer_name + " username is " + username)
+        print("connected to " + peer_ip + " peer name is " + peer_name + " username is " + name)
         # listen from peer
         p2p_messaging(sock, peer_name)
-    elif msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
-        stop_private(msg.split(' ', 1)[1].rstrip(' '))
 
 
 # process different command typed by user
@@ -143,23 +141,23 @@ def process_message_typed(server, msg):
     elif msg.split(' ', 1)[0].rstrip(' ') == "private":
 
         peer_name = msg.split(' ', 2)[1].rstrip(' ')
-        message = peer_name + "(private): " + msg.split(' ', 2)[2]
+        message = username + "(private): " + msg.split(' ', 2)[2]
         # send message to peer
-        print("private message")
         for peer in peers:
             if peer['peer_name'] == peer_name:
                 peer['sock'].sendall(string_to_bytes(message))
         return 'private'
     elif msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
         stop_private(msg.split(' ', 1)[1].rstrip(' '))
+        return 'private'
     return 'not private'
 
 
 # create listening socket to listen from other peers
-def listen_for_connection(server):
+def listen_for_connection(con):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     port = find_available_port(sock)
-    server.sendall(string_to_bytes('port ' + str(port)))
+    con.sendall(string_to_bytes('port ' + str(port)))
     sleep(0.1)
     sock.listen(1)
     while True:
@@ -171,28 +169,23 @@ def listen_for_connection(server):
 def stop_private(peer):
     global peers
     # close the connection
-    for p in peers[peer]:
+    for p in peers:
         if p['peer_name'] == peer:
             con = p['sock']
-            connection = list(filter(lambda i: i['sock'] != con, peers))
-            peers = connection
+            peers = peers.remove(p)
+            print("stop connection from " + peer)
             con.close()
 
 
 # user logged out
 def log_out():
     print("bye")
-    global server, peers
+    global server
     # tell server to logout
     server.sendall(string_to_bytes('logout'))
     # close connection with server
     server.close()
-    # close connection with all peers
-    for peer in peers:
-        peer['sock'].sendall(string_to_bytes('stopprivate ' + username))
-        peer['sock'].close()
-    peers = []
-    exit(0)
+    server = None
 
 
 def find_available_port(sock):
@@ -214,11 +207,18 @@ def find_available_port(sock):
 def p2p_messaging(connection, peer_name):
     global server
     while True:
-        sockets_list = [sys.stdin, connection, server]
+        if server is not None:
+            sockets_list = [sys.stdin, connection, server]
+        else:
+            sockets_list = [sys.stdin, connection]
         read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
         for socks in read_sockets:
             if socks == connection:
                 message = socks.recv(2048)
+                msg = bytes_to_string(message)
+                if msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
+                    stop_private(msg.split(' ', 1)[1].rstrip(' '))
+                    return
                 print(bytes_to_string(message))
             elif socks == server:
                 message = socks.recv(2048)
@@ -238,11 +238,11 @@ def p2p_connection(sock, client_address):
     try:
         print('ready to get name')
         # get username from peer
-        peer_name = sock.recv(1024)
+        peer_name = bytes_to_string(sock.recv(1024))
         print("get name")
 
         # add user to list
-        peers.append({'peer_name': bytes_to_string(peer_name), 'sock': sock})
+        peers.append({'peer_name': peer_name, 'sock': sock})
 
         print("connection from ", peer_name)
         p2p_messaging(sock, peer_name)
