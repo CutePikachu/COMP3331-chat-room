@@ -86,12 +86,15 @@ def online_user(connection):
     while True:
         try:
             sockets_list = [sys.stdin, connection]
-            read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
+            try:
+                read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
+            except:
+                return
             for socks in read_sockets:
                 if socks == connection:
                     message = socks.recv(2048)
-                    process_message_received(connection, message)
-                    print(bytes_to_string(message))
+                    if process_message_received(connection, message): 
+                        print(bytes_to_string(message))
                 else:
                     message = sys.stdin.readline()
                     result = process_message_typed(connection, message)
@@ -99,7 +102,8 @@ def online_user(connection):
                         log_out()
                     elif result != 'private':
                         global server
-                        server.send(string_to_bytes(message))
+                        server.send(string_to_bytes(message)) if server else print("Invalid P2P message, you are disconnected with the server.")
+                        
         except KeyboardInterrupt:
             log_out()
 
@@ -112,6 +116,7 @@ def process_message_received(con, msg):
         print(msg)
         log_out()
     elif msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
+        print("\"" + msg.split(' ', 1)[0].rstrip(' ') + "\"" + " receive")
         stop_private(msg.split(' ', 1)[1])
     elif msg.split(' ', 1)[0].rstrip(' ') == "private_connection":
         peer_ip = msg.split(' ', 4)[1].rstrip(' ')
@@ -124,17 +129,19 @@ def process_message_received(con, msg):
         peer_address = (peer_ip, int(peer_port))
         # client connect to peer and add peer to list
         sock.connect(peer_address)
-        print("\"" + peer_name + "\"")
         peers.append({'peer_name': peer_name, 'sock': sock})
         # send name to peer
         sock.sendall(string_to_bytes(username))
         print("connected to " + peer_ip + " peer name is " + peer_name + " username is " + name)
         # listen from peer
         p2p_messaging(sock, peer_name)
+        return False
+    return True
 
 
 # process different command typed by user
 def process_message_typed(server, msg):
+    global peers, username
     if msg == "logout":
         return "logout"
     # if the message is private messaging
@@ -148,7 +155,15 @@ def process_message_typed(server, msg):
                 peer['sock'].sendall(string_to_bytes(message))
         return 'private'
     elif msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
-        stop_private(msg.split(' ', 1)[1].rstrip(' '))
+        peer = msg.split(' ', 1)[1].rstrip(' ')
+        
+        for p in peers:
+            if p['peer_name'] == peer.rstrip("\n"):
+                print("stop connection from " + peer)
+                con = p['sock']
+                con.sendall(string_to_bytes("stopprivate " + username))
+                con.close()
+                peers = peers.remove(p)
         return 'private'
     return 'not private'
 
@@ -167,14 +182,17 @@ def listen_for_connection(con):
 
 
 def stop_private(peer):
+    print("stop private connection")
     global peers
     # close the connection
     for p in peers:
-        if p['peer_name'] == peer:
-            con = p['sock']
-            peers = peers.remove(p)
+        if p['peer_name'] == peer.rstrip("\n"):
             print("stop connection from " + peer)
+            con = p['sock']
             con.close()
+            peers = peers.remove(p)
+            
+            
 
 
 # user logged out
@@ -211,7 +229,10 @@ def p2p_messaging(connection, peer_name):
             sockets_list = [sys.stdin, connection, server]
         else:
             sockets_list = [sys.stdin, connection]
-        read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
+        try: 
+            read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
+        except ValueError:
+            return
         for socks in read_sockets:
             if socks == connection:
                 message = socks.recv(2048)

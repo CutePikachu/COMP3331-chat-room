@@ -86,7 +86,7 @@ class Server:
                     message = msgs[1].split(' ', 1)[1]
                     self.messaging(username, receiver, message)
                 elif re.match('broadcast', msgs[0].rstrip(' ')):
-                    message = username + ": " + msgs[1]
+                    message = username + "(broadcast): " + msgs[1]
                     self.broadcast(string_to_bytes(message), connection, curr_user)
                 elif re.match('whoelse', msgs[0].rstrip(' ')):
                     list_user = self.who_else(username)
@@ -134,11 +134,15 @@ class Server:
     def logout(self, username):
         user = find_user(username, self.users)
         connection = user.log_out()
-        connection.sendall(string_to_bytes("You have been logged out"))
-        sleep(0.1)
-        self.broadcast(string_to_bytes(username + " left the chat"), connection, user)
-        connection.close()
-        self.remove(connection)
+        try: 
+            connection.sendall(string_to_bytes("You have been logged out"))
+            connection.close()
+            sleep(0.1)
+        except OSError:
+            sleep(0.1)
+        finally:
+            self.broadcast(string_to_bytes(username + " left the chat"), connection, user)  
+            self.remove(connection)
 
     # add a new user thread
     def add_user(self, connection, client_address):
