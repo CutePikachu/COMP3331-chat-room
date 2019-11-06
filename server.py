@@ -202,10 +202,8 @@ class Server:
 
     def timeout_user(self):
         Timer(1.0, self.timeout_user).start()
-        # print('here')
         for user in self.users:
             if user.check_timeout(self._timeout):
-                print("logout")
                 self.logout(user.get_username())
 
     # send message to other user
@@ -299,4 +297,3 @@ if __name__ == '__main__':
     server = Server()
     server.timeout_user()
     server.main()
-    

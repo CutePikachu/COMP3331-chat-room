@@ -30,7 +30,7 @@ def set_up(server_ip, server_port):
     server_address = (server_ip, server_port)
     # client connect to server
     sock.connect(server_address)
-    print("Connecting to server...")
+    print("system: Connecting to server...")
     global server
     server = sock
     login()
@@ -63,7 +63,7 @@ def login():
 
         finally:
             if bytes_to_string(valid) == 'True':
-                print('Login successfully...')
+                print('system: Login successfully...')
                 username = username
                 # client listening on its port when it is login successfully
                 start_new_thread(listen_for_connection, (server,))
@@ -71,11 +71,11 @@ def login():
                 online_user(server)
                 exit(1)
             elif bytes_to_string(valid) == 'False':
-                print("Invalid password, please try again")
+                print("system: Invalid password, please try again")
             elif bytes_to_string(valid) == 'error before entering pwd':
                 print(msg)
             else:
-                print("You have been blocked, please try again later")
+                print("system: You have been blocked, please try again later")
                 print(valid)
                 server.close()
                 exit(1)
@@ -93,10 +93,10 @@ def online_user(connection):
             for socks in read_sockets:
                 if socks == connection:
                     message = socks.recv(2048)
-                    if not message :
-                        print('\nDisconnected from server')
+                    if not message:
+                        print('\nsystem: Disconnected from server')
                         return
-                    if process_message_received(connection, message): 
+                    if process_message_received(connection, message):
                         print(bytes_to_string(message))
                 else:
                     message = sys.stdin.readline()
@@ -105,8 +105,9 @@ def online_user(connection):
                         log_out()
                     elif result != 'private':
                         global server
-                        server.send(string_to_bytes(message)) if server else print("Invalid P2P message, you are disconnected with the server.")
-                        
+                        server.send(string_to_bytes(message)) if server else print(
+                            "system: error. Invalid P2P message, you are disconnected with the server.")
+
         except KeyboardInterrupt:
             log_out()
 
@@ -134,7 +135,7 @@ def process_message_received(con, msg):
         peers.append({'peer_name': peer_name, 'sock': sock})
         # send name to peer
         sock.sendall(string_to_bytes(username))
-        print("connected to " + peer_ip + " peer name is " + peer_name + " username is " + name)
+        print("system: connected to " + peer_ip + " peer name is " + peer_name + " username is " + name)
         # listen from peer
         p2p_messaging(sock, peer_name)
         return False
@@ -154,7 +155,7 @@ def process_message_typed(server, msg):
         message = username + "(private): " + msg.split(' ', 2)[2]
         # if there is no peer connected
         if not peers:
-            print(f"You haven't established an connection with {peer_name}.")
+            print(f"system: error. You haven't established an connection with {peer_name}.")
             return "private"
         find = False
         # send message to peer
@@ -163,12 +164,12 @@ def process_message_typed(server, msg):
                 find = True
                 peer['sock'].sendall(string_to_bytes(message))
         if not find:
-            print(f"You haven't established an connection with {peer_name}.")
+            print(f"system: error. You haven't established an connection with {peer_name}.")
         return 'private'
     elif msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
         # if there is no peer connected
         if not peers:
-            print(f"You haven't established an connection with {peer_name}.")
+            print(f"system: error. You haven't established an connection with {peer_name}.")
             return "private"
         find = False
         peer = msg.split(' ', 1)[1].rstrip(' ')
@@ -183,10 +184,10 @@ def process_message_typed(server, msg):
                 peers = peers.remove(p)
         # error message for not find peer
         if not find:
-            print(f"You haven't established an connection with {peer_name}.")
+            print(f"system: error. You haven't established an connection with {peer_name}.")
         return 'private'
     elif msg.strip() == "startprivate":
-        print("peer name should not be empty.")
+        print("system: error, peer name should not be empty.")
         return "private"
     return 'not private'
 
@@ -199,13 +200,13 @@ def listen_for_connection(con):
     sleep(0.1)
     sock.listen(1)
     while True:
-        print("Waiting for connection...")
+        print("system: Waiting for connection...")
         connection, client_address = sock.accept()
         start_new_thread(p2p_connection, (connection, client_address))
 
 
 def stop_private(peer):
-    print("stop private connection")
+    print("system: stop private connection")
     global peers
     # close the connection
     for p in peers:
@@ -214,8 +215,6 @@ def stop_private(peer):
             con = p['sock']
             con.close()
             peers = peers.remove(p)
-            
-            
 
 
 # user logged out
@@ -252,7 +251,7 @@ def p2p_messaging(connection, peer_name):
             sockets_list = [sys.stdin, connection, server]
         else:
             sockets_list = [sys.stdin, connection]
-        try: 
+        try:
             read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
         except ValueError:
             return
@@ -281,18 +280,18 @@ def p2p_messaging(connection, peer_name):
 # receive connection from peer
 def p2p_connection(sock, client_address):
     try:
-        print('ready to get name')
+        print('system: ready to get name')
         # get username from peer
         peer_name = bytes_to_string(sock.recv(1024))
-        print("get name")
+        print("system: get name")
 
         # add user to list
         peers.append({'peer_name': peer_name, 'sock': sock})
 
-        print("connection from ", peer_name)
+        print("system: connection from ", peer_name)
         p2p_messaging(sock, peer_name)
     finally:
-        print('connection closed from ', peer_name)
+        print('system: connection closed from ', peer_name)
 
 
 if __name__ == '__main__':
