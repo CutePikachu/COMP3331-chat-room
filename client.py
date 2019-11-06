@@ -76,7 +76,6 @@ def login():
                 print(msg)
             else:
                 print("You have been blocked, please try again later")
-                print(valid)
                 server.close()
                 exit(1)
 
