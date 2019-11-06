@@ -75,8 +75,7 @@ def login():
             elif bytes_to_string(valid) == 'error before entering pwd':
                 print(msg)
             else:
-                print("system: You have been blocked, please try again later")
-                print(valid)
+                print("You have been blocked, please try again later")
                 server.close()
                 exit(1)
 
