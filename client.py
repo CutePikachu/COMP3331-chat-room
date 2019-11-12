@@ -14,10 +14,10 @@ peers = []
 def main():
     if len(sys.argv) < 3:
         print("Usage: python3 client.py [server_IP] [server_port]")
-        exit(1)
+        sys.exit(1)
     elif not sys.argv[2].isdigit():
         print("Invalid server IP address or server port")
-        exit(1)
+        sys.exit(1)
 
     server_ip = sys.argv[1]
     server_port = int(sys.argv[2])
@@ -80,32 +80,38 @@ def login():
                 exit(1)
 
 
-# while the user is online, it can send command to the server
-def online_user(connection):
+# listen from keyboard
+def listen_from_keyboard(connection):
+    global server
     while True:
         try:
-            sockets_list = [sys.stdin, connection]
-            try:
-                read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
-            except:
+            message = sys.stdin.readline()
+            result = process_message_typed(connection, message)
+            if result == 'logout':
+                log_out()
+            elif result != 'private':
+                server.send(string_to_bytes(message)) if server else print(
+                    "system: error. Invalid client server message, you are disconnected with the server.")
+            elif connection:
+                connection.send(string_to_bytes(message))
+        except KeyboardInterrupt:
+            sys.exit(1)                  
+
+
+# while the user is online, it can send command to the server
+def online_user(connection):
+    global server
+    start_new_thread(listen_from_keyboard, (None, ))
+    while True:
+        try:
+            if not server:
                 return
-            for socks in read_sockets:
-                if socks == connection:
-                    message = socks.recv(2048)
-                    if not message:
-                        print('\nsystem: Disconnected from server')
-                        return
-                    if process_message_received(connection, message):
-                        print(bytes_to_string(message))
-                else:
-                    message = sys.stdin.readline()
-                    result = process_message_typed(connection, message)
-                    if result == 'logout':
-                        log_out()
-                    elif result != 'private':
-                        global server
-                        server.send(string_to_bytes(message)) if server else print(
-                            "system: error. Invalid P2P message, you are disconnected with the server.")
+            message = server.recv(2048)
+            if not message:
+                print('\nsystem: Disconnected from server')
+                return
+            if process_message_received(server, message):
+                print(bytes_to_string(message))
 
         except KeyboardInterrupt:
             log_out()
@@ -142,8 +148,8 @@ def process_message_received(con, msg):
 
 
 # process different command typed by user
+# determine whether it is private
 def process_message_typed(server, msg):
-    print()
     global peers, username
     if msg == "logout":
         return "logout"
@@ -188,6 +194,12 @@ def process_message_typed(server, msg):
     elif msg.strip() == "startprivate":
         print("system: error, peer name should not be empty.")
         return "private"
+    elif msg.split(' ', 1)[0].rstrip(' ') == 'startprivate':
+        peer_name = msg.split(' ', 1)[1].rstrip(' ')
+        for peer in peers:
+            if peer['peer_name'] == peer_name:
+                print(f"system: error. You have already connected with {peer_name}.")
+                return 'private'
     return 'not private'
 
 
@@ -197,7 +209,7 @@ def listen_for_connection(con):
     port = find_available_port(sock)
     con.sendall(string_to_bytes('port ' + str(port)))
     sleep(0.1)
-    sock.listen(1)
+    sock.listen(5)
     while True:
         print("system: Waiting for connection...")
         connection, client_address = sock.accept()
@@ -244,36 +256,14 @@ def find_available_port(sock):
 
 # get message from peer
 def p2p_messaging(connection, peer_name):
-    global server
+    start_new_thread(listen_from_keyboard, (connection, ))
     while True:
-        if server is not None:
-            sockets_list = [sys.stdin, connection, server]
-        else:
-            sockets_list = [sys.stdin, connection]
-        try:
-            read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
-        except ValueError:
-            return
-        for socks in read_sockets:
-            if socks == connection:
-                message = socks.recv(2048)
-                msg = bytes_to_string(message)
-                if msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
-                    stop_private(msg.split(' ', 1)[1].rstrip(' '))
-                    return
-                print(bytes_to_string(message))
-            elif socks == server:
-                message = socks.recv(2048)
-                process_message_received(server, message)
-                print(bytes_to_string(message))
-            else:
-                message = sys.stdin.readline()
-                result = process_message_typed(server, message)
-                print(result)
-                if result == 'logout':
-                    log_out()
-                elif result == 'not private':
-                    server.send(string_to_bytes(message))
+        message = connection.recv(2048)
+        msg = bytes_to_string(message)
+        if msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
+            stop_private(msg.split(' ', 1)[1].rstrip(' '))
+            break
+        print(bytes_to_string(message))
 
 
 # receive connection from peer
@@ -294,4 +284,6 @@ def p2p_connection(sock, client_address):
 
 
 if __name__ == '__main__':
-    main()
+    start_new_thread(main, ())
+    while True:
+        sleep(0.1)

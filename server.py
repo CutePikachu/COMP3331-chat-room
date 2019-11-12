@@ -210,10 +210,14 @@ class Server:
     def messaging(self, sender, receiver, message, connection):
         receiver_con = find_user(receiver, self.users)
         message = "from " + sender + " : " + message
-        if not receiver_con:
+        if sender == receiver:
+            connection.sendall(string_to_bytes(f"Error: you shouldn't message yourself."))
+        elif not receiver_con:
             connection.sendall(string_to_bytes(f"Error: {receiver} is not available."))
         elif not receiver_con.is_active():
             receiver_con.store_offline_message(message)
+        elif receiver_con.is_blocked(sender):
+            connection.sendall(string_to_bytes(f"Error: your message won't be delievered as the recipient has blocked you."))
         else:
             receiver_con.get_connection().sendall(string_to_bytes(message))
 
@@ -236,9 +240,6 @@ class Server:
 
     # broadcast msg to users
     def broadcast(self, message, connection, sender):
-        # if the sender has blocked someone
-        if sender.has_black_list():
-            connection.sendall(string_to_bytes("Warning. You have blocked some user who won't receive this message."))
         for user in self._active_users:
             # if the user is not themselves or blocks the sender
             # check the sender is not in the black list of receiver
@@ -250,6 +251,8 @@ class Server:
                     user['sock'].close()
                     # if the user is no longer active, remove from the active list
                     self._active_users.remove(user)
+            elif receiver.is_blocked(sender.get_username()):
+                connection.sendall(string_to_bytes("Warning. Some user who won't receive this message."))
 
     # allow a user to block another user
     def block(self, username, block_name, connection):
@@ -263,7 +266,7 @@ class Server:
     def unblock(self, username, unblock_name, connection):
         user = find_user(username, self.users)
         if user.unblock_user(unblock_name):
-            connection.sendall(string_to_bytes(unblock_name + " has been blocked"))
+            connection.sendall(string_to_bytes(unblock_name + " has been unblocked"))
         else:
             connection.sendall(string_to_bytes("Failed. You cannot unblock " + unblock_name))
 
