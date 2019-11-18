@@ -21,19 +21,25 @@ def main():
 
     server_ip = sys.argv[1]
     server_port = int(sys.argv[2])
-    set_up(server_ip, server_port)
+    start_new_thread(set_up, (server_ip, server_port))
+    while True:
+        sleep(0.1)
+    
 
 
 # set up the client connection
 def set_up(server_ip, server_port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = (server_ip, server_port)
-    # client connect to server
-    sock.connect(server_address)
-    print("system: Connecting to server...")
-    global server
-    server = sock
-    login()
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = (server_ip, server_port)
+        # client connect to server
+        sock.connect(server_address)
+        print("system: Connecting to server...")
+        global server
+        server = sock
+        login()
+    except ConnectionRefusedError:
+        print("connnection failed")
 
 
 # user enter use name and password for login validation
@@ -284,6 +290,4 @@ def p2p_connection(sock, client_address):
 
 
 if __name__ == '__main__':
-    start_new_thread(main, ())
-    while True:
-        sleep(0.1)
+    main()

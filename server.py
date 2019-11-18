@@ -189,7 +189,7 @@ class Server:
         server_address = ('localhost', port_number)
         sock.bind(server_address)
         print("The server has been set up.")
-        sock.listen(1)
+        sock.listen(5)
 
         # connect with client
         while True:
