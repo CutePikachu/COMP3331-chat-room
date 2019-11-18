@@ -143,7 +143,6 @@ def process_message_received(con, msg):
 
 # process different command typed by user
 def process_message_typed(server, msg):
-    print()
     global peers, username
     if msg == "logout":
         return "logout"
@@ -175,7 +174,7 @@ def process_message_typed(server, msg):
         # find the peer to close connection
         for p in peers:
             if p['peer_name'] == peer.rstrip("\n"):
-                print("stop connection from " + peer)
+                print("system: stop connection from " + peer)
                 find = True
                 con = p['sock']
                 con.sendall(string_to_bytes("stopprivate " + username))
@@ -197,7 +196,7 @@ def listen_for_connection(con):
     port = find_available_port(sock)
     con.sendall(string_to_bytes('port ' + str(port)))
     sleep(0.1)
-    sock.listen(1)
+    sock.listen(5)
     while True:
         print("system: Waiting for connection...")
         connection, client_address = sock.accept()
@@ -214,11 +213,13 @@ def stop_private(peer):
             con = p['sock']
             con.close()
             peers = peers.remove(p)
+            if not peers:
+                peers = []
 
 
 # user logged out
 def log_out():
-    print("bye")
+    print("System: bye")
     global server
     # tell server to logout
     server.sendall(string_to_bytes('logout'))
@@ -261,7 +262,8 @@ def p2p_messaging(connection, peer_name):
                 if msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
                     stop_private(msg.split(' ', 1)[1].rstrip(' '))
                     return
-                print(bytes_to_string(message))
+                if message:
+                    print(bytes_to_string(message))
             elif socks == server:
                 message = socks.recv(2048)
                 process_message_received(server, message)
@@ -269,7 +271,6 @@ def p2p_messaging(connection, peer_name):
             else:
                 message = sys.stdin.readline()
                 result = process_message_typed(server, message)
-                print(result)
                 if result == 'logout':
                     log_out()
                 elif result == 'not private':

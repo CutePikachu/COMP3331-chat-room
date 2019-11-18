@@ -198,7 +198,7 @@ class Server:
                 connection, client_address = sock.accept()
                 start_new_thread(self.add_user, (connection, client_address))
             except KeyboardInterrupt:
-                exit(1)
+                sys.exit(1)
 
     def timeout_user(self):
         Timer(1.0, self.timeout_user).start()
@@ -238,7 +238,8 @@ class Server:
     def broadcast(self, message, connection, sender):
         # if the sender has blocked someone
         if sender.has_black_list():
-            connection.sendall(string_to_bytes("Warning. You have blocked some user who won't receive this message."))
+            connection.sendall(string_to_bytes("Systen: warning. You have blocked some user who won't receive this "
+                                               "message."))
         for user in self._active_users:
             # if the user is not themselves or blocks the sender
             # check the sender is not in the black list of receiver
