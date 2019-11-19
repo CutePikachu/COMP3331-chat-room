@@ -68,6 +68,19 @@ class Server:
                 connection.sendall(string_to_bytes("block"))
                 return False, username
 
+    def broadcastLogin_out(self, message, connection, sender):
+        for user in self._active_users:
+            # if the user is not themselves or blocks the sender
+            # check the sender is not in the black list of receiver
+            receiver = find_user(user['username'], self.users)
+            if user['sock'] != connection and not sender.is_blocked(receiver.get_username()):
+                try:
+                    user['sock'].sendall(message)
+                except:
+                    user['sock'].close()
+                    # if the user is no longer active, remove from the active list
+                    self._active_users.remove(user)
+
     # process the command entered form user
     def process_command(self, connection, username):
 
@@ -149,7 +162,7 @@ class Server:
         except OSError:
             sleep(0.1)
         finally:
-            self.broadcast(string_to_bytes("System: " + username + " left the chat"), connection, user)
+            self.broadcastLogin_out(string_to_bytes("System: " + username + " left the chat"), connection, user)
             self.remove(connection)
 
     # add a new user thread
@@ -235,11 +248,13 @@ class Server:
 
     # broadcast msg to users
     def broadcast(self, message, connection, sender):
-        # if the sender has blocked someone
-        if sender.has_black_list():
-            connection.sendall(string_to_bytes("Systen: warning. You have blocked some user who won't receive this "
-                                               "message."))
-
+        for user in self._active_users:
+            # if the user is not themselves or blocks the sender
+            # check the sender is not in the black list of receiver
+            receiver = find_user(user['username'], self.users)
+            if receiver.is_blocked(sender.get_username()):
+                connection.sendall(string_to_bytes("System: Warning. Some user who won't receive this message."))
+                break
         for user in self._active_users:
             # if the user is not themselves or blocks the sender
             # check the sender is not in the black list of receiver
@@ -251,8 +266,6 @@ class Server:
                     user['sock'].close()
                     # if the user is no longer active, remove from the active list
                     self._active_users.remove(user)
-            elif receiver.is_blocked(sender.get_username()):
-                connection.sendall(string_to_bytes("System: Warning. Some user who won't receive this message."))
 
     # allow a user to block another user
     def block(self, username, block_name, connection):
