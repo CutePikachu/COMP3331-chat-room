@@ -102,11 +102,9 @@ class Server:
                     else:
                         connection.sendall(string_to_bytes(list_user))
                 elif re.match('block', msgs[0]):
-                    print('block')
                     block_user = msgs[1]
                     self.block(username, block_user, connection)
                 elif re.match('unblock', msgs[0]):
-                    print('unblock')
                     unblock_user = msgs[1]
                     self.unblock(username, unblock_user, connection)
                 elif re.match('startprivate', msgs[0]):
@@ -129,12 +127,10 @@ class Server:
                     if not find or not peer_name or not peer_name.strip():
                         connection.sendall(string_to_bytes("Error: peer " + peer_name + " is not valid"))
                 elif re.match('port', msgs[0]):
-                    print('get port for listening')
                     port_num = msgs[1].rstrip('\n')
                     curr_user.set_port_num(port_num)
                 else:
                     connection.sendall(string_to_bytes('In valid command ' + msgs[0]))
-                    print('Invalid command is ' + msgs[0])
             except:
                 continue
 
