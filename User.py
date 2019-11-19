@@ -60,8 +60,6 @@ class User:
         self._num_tries = 0
 
     def check_block(self):
-        print(self._block)
-        print(time.time())
         if self._block < time.time():
             return False
         else:
@@ -113,6 +111,9 @@ class User:
     # store the offline messages when the user logoff
     def store_offline_message(self, msg):
         self._offline_messages.append(msg)
+
+    def clear_offline_message(self):
+        self._offline_messages = []
 
     # if the user has blocked some peers
     def has_black_list(self):

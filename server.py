@@ -115,15 +115,15 @@ class Server:
                             find = True
                             # if the user is being blocked
                             # he shouldnt be connected
-                            user_instance = find_user(username, self.users)
+                            user_instance = find_user(peer_name, self.users)
                             if user_instance.is_blocked(username):
-                                connection.sendall(string_to_bytes(f"connection failed, {peer_name} has blocked you:)."))
+                                connection.sendall(string_to_bytes(f"Error: connection failed, {peer_name} has blocked you:)."))
                                 block = True
                             else:
                                 peer = find_user(peer_name, self.users)
                                 # send address to client request for connection
                                 connection.sendall(string_to_bytes(f"private_connection {peer.get_address()[0]} {peer.get_port_num()} {peer_name} {username}"))
-                    if not find or not peer_name or not peer_name.strip() or block:
+                    if not find or not peer_name or not peer_name.strip():
                         connection.sendall(string_to_bytes("Error: peer " + peer_name + " is not valid"))
                 elif re.match('port', msgs[0]):
                     port_num = msgs[1].rstrip('\n')
@@ -172,7 +172,7 @@ class Server:
                 if offline_message:
                     for msg in offline_message:
                         connection.sendall(string_to_bytes(msg + '\n'))
-
+                curr_user.clear_offline_message()
                 self.process_command(connection, username)
 
         finally:
