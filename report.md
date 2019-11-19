@@ -64,12 +64,8 @@ User is a class to help store clients information at server side, it has `userna
 
 #### Design issues:
 
-Due to the unpredicted behavior of python multithreading, all the threads may not be fully synchronised, which causes an issue of P2P communication. Since I used a thread to listen from server, a thread to listen from stand input and each peer uses a thread. If all the threads are synchronised, it works well. But sometimes it has an asynchronised peer which may results in other threads waiting for it to run. 
-
 Communications between server and clients are using strings which are apparently not scalable. 
 
 #### Future Improvements:
-
-Using C or Java to deal with multi-threading issue. 
 
 Using pickles instead of strings can make communication more clear and extendable.

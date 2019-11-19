@@ -96,7 +96,10 @@ def listen_from_keyboard(connection):
                 server.send(string_to_bytes(message)) if server else print(
                     "Error: Invalid client server message, you are disconnected with the server.")
             elif connection:
-                connection.send(string_to_bytes(message))
+                try:
+                    connection.send(string_to_bytes(message))
+                except OSError:
+                    return
         except KeyboardInterrupt:
             sys.exit(1)
 
@@ -123,6 +126,8 @@ def online_user(connection):
 # process the message receiver from server
 def process_message_received(con, msg):
     global peers
+    if not peers:
+        peers = []
     msg = bytes_to_string(msg)
     if msg == "You have been logged out":
         log_out()
@@ -163,6 +168,7 @@ def process_message_typed(server, msg):
         message = username + "(private): " + msg.split(' ', 2)[2]
         # if there is no peer connected
         if not peers:
+            peers = []
             print(f"system: error. You haven't established an connection with {peer_name}.")
             return "private"
         find = False
@@ -178,13 +184,13 @@ def process_message_typed(server, msg):
         peer_name = msg.split(' ', 2)[1].rstrip(' ')
         # if there is no peer connected
         if not peers:
+            peers = []
             print(f"system: error. You haven't established an connection with {peer_name}.")
             return "private"
         find = False
         peer = msg.split(' ', 1)[1].rstrip(' ')
         # find the peer to close connection
-        if not peers:
-            peers = []
+
         for p in peers:
             if p['peer_name'] == peer.rstrip("\n"):
                 print("system: stop connection from " + peer)
@@ -229,6 +235,8 @@ def stop_private(peer):
     print("system: stop private connection")
     global peers
     # close the connection
+    if not peers:
+        peers = []
     for p in peers:
         if p['peer_name'] == peer.rstrip("\n"):
             print("stop connection from " + peer)
@@ -283,6 +291,9 @@ def p2p_messaging(connection, peer_name):
 
 # receive connection from peer
 def p2p_connection(sock, client_address):
+    global peers
+    if not peers:
+        peers = []
     try:
         print('system: ready to get name')
         # get username from peer
