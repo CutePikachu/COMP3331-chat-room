@@ -43,6 +43,7 @@ class Server:
                 # check whether the user has been blocked for login
                 # no need to process login for invalid user
                 if username == user.get_username() and user.check_block():
+                    print(user.check_block())
                     connection.sendall(string_to_bytes("block"))
                     return False, username
 
@@ -56,10 +57,11 @@ class Server:
             # if the username and pwd are valid or incorrect time less than 3
             # no need to block the user
             if curr_user.get_num_tries() < 3 or valid == "True":
+                print(valid)
                 connection.sendall(string_to_bytes(valid))
 
             if valid == 'True':
-                self.broadcast(string_to_bytes("System: " + username + " has logged in"), connection, curr_user)
+                self.broadcastLogin_out(string_to_bytes("System: " + username + " has logged in"), connection, curr_user)
                 return True, username
 
             # block the user if it has been tried for equal or more than 3 times and still incorrect

@@ -63,7 +63,6 @@ def login():
                 pwd = sys.stdin.readline().rstrip()
                 server.sendall(string_to_bytes(pwd))
                 valid = server.recv(16)
-
         finally:
             if bytes_to_string(valid) == 'True':
                 print('system: Login successfully...')
