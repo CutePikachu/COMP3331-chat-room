@@ -60,7 +60,7 @@ class Server:
                 connection.sendall(string_to_bytes(valid))
 
             if valid == 'True':
-                self.broadcast(string_to_bytes(username + " has logged in"), connection, curr_user)
+                self.broadcast(string_to_bytes("System: " + username + " has logged in"), connection, curr_user)
                 return True, username
 
             # block the user if it has been tried for equal or more than 3 times and still incorrect
@@ -126,14 +126,14 @@ class Server:
                                 peer = find_user(peer_name, self.users)
                                 # send address to client request for connection
                                 connection.sendall(string_to_bytes(f"private_connection {peer.get_address()[0]} {peer.get_port_num()} {peer_name} {username}"))
-                    if not find or not peer_name or not peer_name.strip():
+                    if not find or not peer_name or not peer_name.strip() or block:
                         connection.sendall(string_to_bytes("Error: peer " + peer_name + " is not valid"))
                 elif re.match('port', msgs[0]):
                     print('get port for listening')
                     port_num = msgs[1].rstrip('\n')
                     curr_user.set_port_num(port_num)
                 else:
-                    connection.sendall(string_to_bytes('In valid command ' + msgs[0]))
+                    connection.sendall(string_to_bytes('Error: In valid command ' + msgs[0]))
                     print('Invalid command is ' + msgs[0])
             except:
                 continue
@@ -148,13 +148,13 @@ class Server:
         user = find_user(username, self.users)
         connection = user.log_out()
         try: 
-            connection.sendall(string_to_bytes("You have been logged out"))
+            connection.sendall(string_to_bytes("System: You have been logged out"))
             connection.close()
             sleep(0.1)
         except OSError:
             sleep(0.1)
         finally:
-            self.broadcast(string_to_bytes(username + " left the chat"), connection, user)  
+            self.broadcast(string_to_bytes("System: " + username + " left the chat"), connection, user)
             self.remove(connection)
 
     # add a new user thread
@@ -257,23 +257,23 @@ class Server:
                     # if the user is no longer active, remove from the active list
                     self._active_users.remove(user)
             elif receiver.is_blocked(sender.get_username()):
-                connection.sendall(string_to_bytes("Warning. Some user who won't receive this message."))
+                connection.sendall(string_to_bytes("System: Warning. Some user who won't receive this message."))
 
     # allow a user to block another user
     def block(self, username, block_name, connection):
         user = find_user(username, self.users)
         if user.block_user(block_name):
-            connection.sendall(string_to_bytes(block_name + " has been blocked"))
+            connection.sendall(string_to_bytes("System: " + block_name + " has been blocked"))
         else:
-            connection.sendall(string_to_bytes("Failed. You cannot block " + block_name))
+            connection.sendall(string_to_bytes("System: Failed. You cannot block " + block_name))
 
     # allow a user to unblock another user
     def unblock(self, username, unblock_name, connection):
         user = find_user(username, self.users)
         if user.unblock_user(unblock_name):
-            connection.sendall(string_to_bytes(unblock_name + " has been unblocked"))
+            connection.sendall(string_to_bytes("System: " + unblock_name + " has been unblocked"))
         else:
-            connection.sendall(string_to_bytes("Failed. You cannot unblock " + unblock_name))
+            connection.sendall(string_to_bytes("System: Failed. You cannot unblock " + unblock_name))
 
     # read the credential file and create username pwd pair
     def read_credentials(self):
