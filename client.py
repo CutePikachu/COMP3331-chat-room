@@ -21,9 +21,7 @@ def main():
 
     server_ip = sys.argv[1]
     server_port = int(sys.argv[2])
-    start_new_thread(set_up, (server_ip, server_port))
-    while True:
-        sleep(0.1)
+    set_up(server_ip, server_port)
 
 
 # set up the client connection
@@ -102,9 +100,8 @@ def listen_from_keyboard(connection):
         except KeyboardInterrupt:
             sys.exit(1)
 
-        # while the user is online, it can send command to the server
 
-
+# while the user is online, it can send command to the server
 def online_user(connection):
     global server
     start_new_thread(listen_from_keyboard, (None,))
@@ -148,7 +145,7 @@ def process_message_received(con, msg):
         sock.sendall(string_to_bytes(username))
         print("system: connected to " + peer_ip + " peer name is " + peer_name + " username is " + name)
         # listen from peer
-        p2p_messaging(sock, peer_name)
+        start_new_thread(p2p_messaging, (sock, peer_name))
         return False
     return True
 
