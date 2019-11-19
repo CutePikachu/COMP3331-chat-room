@@ -36,7 +36,7 @@ def set_up(server_ip, server_port):
         server = sock
         login()
     except ConnectionRefusedError:
-        print("connnection failed")
+        print("System: connnection failed")
 
 
 # user enter use name and password for login validation
@@ -183,6 +183,8 @@ def process_message_typed(server, msg):
         find = False
         peer = msg.split(' ', 1)[1].rstrip(' ')
         # find the peer to close connection
+        if not peers:
+            peers = []
         for p in peers:
             if p['peer_name'] == peer.rstrip("\n"):
                 print("system: stop connection from " + peer)
@@ -191,6 +193,7 @@ def process_message_typed(server, msg):
                 con.sendall(string_to_bytes("stopprivate " + username))
                 con.close()
                 peers = peers.remove(p)
+                break
         # error message for not find peer
         if not find:
             print(f"system: error. You haven't established an connection with {peer_name}.")
@@ -200,6 +203,8 @@ def process_message_typed(server, msg):
         return "private"
     elif msg.split(' ', 1)[0].rstrip(' ') == 'startprivate':
         peer_name = msg.split(' ', 1)[1].rstrip(' ')
+        if not peers:
+            peers = []
         for peer in peers:
             if peer['peer_name'] == peer_name:
                 print(f"system: error. You have already connected with {peer_name}.")
@@ -265,12 +270,15 @@ def find_available_port(sock):
 def p2p_messaging(connection, peer_name):
     start_new_thread(listen_from_keyboard, (connection,))
     while True:
-        message = connection.recv(2048)
-        msg = bytes_to_string(message)
-        if msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
-            stop_private(msg.split(' ', 1)[1].rstrip(' '))
-            break
-        print(bytes_to_string(message))
+        try: 
+            message = connection.recv(2048)
+            msg = bytes_to_string(message)
+            if msg.split(' ', 1)[0].rstrip(' ') == "stopprivate":
+                stop_private(msg.split(' ', 1)[1].rstrip(' '))
+                break
+            print(bytes_to_string(message))
+        except OSError:
+            return 
 
 
 # receive connection from peer
