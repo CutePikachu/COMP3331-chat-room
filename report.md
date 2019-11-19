@@ -69,3 +69,6 @@ Communications between server and clients are using strings which are apparently
 #### Future Improvements:
 
 Using pickles instead of strings can make communication more clear and extendable.
+Add more functionalities such as file transfer. 
+Improve the performance of server, such as more meaningful messages and more commands.
+Allow user to register a new account.
