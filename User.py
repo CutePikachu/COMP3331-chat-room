@@ -55,11 +55,13 @@ class User:
         self._timer = time.time()
 
     # block the user
-    def block_user(self, block_time):
+    def block_self(self, block_time):
         self._block = time.time() + block_time
         self._num_tries = 0
 
     def check_block(self):
+        print(self._block)
+        print(time.time())
         if self._block < time.time():
             return False
         else:

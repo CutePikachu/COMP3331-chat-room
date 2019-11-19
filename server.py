@@ -2,7 +2,7 @@ import sys
 import re
 import socket
 from time import sleep
-from threading import Timer, Lock
+from threading import Timer
 from User import User
 from help_functions import *
 from _thread import *
@@ -14,7 +14,6 @@ class Server:
         self._active_users = []
         self._block_duration = -1
         self._timeout = -1
-        self._lock = Lock()
 
     def process_login(self, connection, client_add):
         while True:
@@ -65,7 +64,7 @@ class Server:
 
             # block the user if it has been tried for equal or more than 3 times and still incorrect
             if curr_user.get_num_tries() >= 3 and valid != 'True':
-                curr_user.block_user(self._block_duration)
+                curr_user.block_self(self._block_duration)
                 connection.sendall(string_to_bytes("block"))
                 return False, username
 

@@ -31,6 +31,8 @@ Sever to client:
 
 - error
   - `Error: <error detail>`
+- infomation
+  - `[info] [message]`
 - others
   - `System: <other information>`
 
@@ -42,7 +44,23 @@ Warnings and some other messages sent from server will start with `System:` exce
 
 <h2>System description</h2>
 
+#### Server:
 
+After the server successfully setup, it is listening on a known port, waiting for clients to connect. After establishing connection with a client, it sends `Username: ` to require clients to login. The server do client's username validation first, if the given user is currently online or an unknown user, corresponding error messages will be sent and displayed at client's window. Then it sends `Password: `. If the password received does not match given username, the client will be asked to enter BOTH username and password again. After three failure attempts of a particular user, the account is blocked for `block_time` duration. If the client tries to login at this time, server will send a message to inform the user that he has been blocked.
+
+Once a client successfully logged in, he can send command to server using the command format mentioned above. Server will assume messaged received by clients are in valid format. The server maintains a list of all registered users and a list of online users and they will be kept updating whenever the client's status changes. Every second, the server will check all online clients to  logout inactive clients. A clients is marked as inactive if the gap between last command sending time and current time is greater than `time_out`. The server logout an user through closing connection.
+
+#### Clients:
+
+Clients only store his connecting peers and his username. Clients will not do much command validation or message processing, it only process information messages from server. That is to say, the first word of the whole message is a known special word. 
+
+After a client's successfully login, he will set up a port for listening and sending the port number to server.
+
+#### User:
+
+User is a class to help store clients information at server side, it has `username, password, connection socket, login time, last active time, block, black list, address, port number, offline messages, number of login attemps` and getters, setters as well as some other check functions.
 
 <h2>Design issues and future improvements</h2>
+
+#### Design issues:
 

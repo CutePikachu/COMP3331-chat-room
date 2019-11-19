@@ -76,11 +76,11 @@ def login():
                 online_user(server)
                 exit(1)
             elif bytes_to_string(valid) == 'False':
-                print("system: Invalid password, please try again")
+                print("Error: Invalid password, please try again")
             elif bytes_to_string(valid) == 'error before entering pwd':
                 print(msg)
             else:
-                print("You have been blocked, please try again later")
+                print("System: You have been blocked, please try again later")
                 server.close()
                 exit(1)
 
@@ -96,7 +96,7 @@ def listen_from_keyboard(connection):
                 log_out()
             elif result != 'private':
                 server.send(string_to_bytes(message)) if server else print(
-                    "system: error. Invalid client server message, you are disconnected with the server.")
+                    "Error: Invalid client server message, you are disconnected with the server.")
             elif connection:
                 connection.send(string_to_bytes(message))
         except KeyboardInterrupt:
@@ -246,6 +246,7 @@ def log_out():
     # close connection with server
     server.close()
     server = None
+    sys.exit(1)
 
 
 def find_available_port(sock):
